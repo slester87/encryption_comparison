@@ -165,8 +165,8 @@ def test_asymmetric(file):
     new_key = RSA.generate(2048, e=65537)
     public_key = new_key.publickey()
     private_key = new_key
-    with open(file,'rb') as f:
-        h = SHA256.new(f.read())
+    # with open(file,'rb') as f:
+    #     h = SHA256.new(f.read())
 
     with open(file, 'rb') as f:
         with open("ciphertext of RSA.txt", 'wb') as g:
@@ -174,11 +174,12 @@ def test_asymmetric(file):
             start = datetime.datetime.now()
             cipher = PKCS1_v1_5.new(public_key)
 
-            bytes_read = f.read(64)
+            bytes_read = f.read(224)
+            h = SHA256.new(bytes_read)
             while not (len(bytes_read) == 0):
                 g.write(cipher.encrypt(bytes_read))
-                bytes_read = f.read(64)
-            g.write(cipher.encrypt(h.digest()))
+                bytes_read = f.read(224)
+                h = SHA256.new(bytes_read)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
@@ -189,14 +190,14 @@ def test_asymmetric(file):
 
             start = datetime.datetime.now()
             dsize = SHA256.digest_size
-            sentinel = Random.new().read(15 + dsize)
+            sentinel = Random.new().read(dsize)
             cipher = PKCS1_v1_5.new(private_key)
-            bytes_read = f.read(64)
+            bytes_read = f.read(256)  #include the digest size (32)
 
             while not (len(bytes_read) == 0):
 
-                g.write(cipher.decrypt(bytes_read, bytes(0)))
-                bytes_read = f.read(64)
+                g.write(cipher.decrypt(bytes_read, sentinel=sentinel))
+                bytes_read = f.read(256)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
