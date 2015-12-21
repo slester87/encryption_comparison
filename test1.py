@@ -25,7 +25,7 @@ import datetime
 import sys
 import shutil
 from os import path
-
+#ToDo: !!! Adjust how times are calculated e.g. where starts and finishes are placed. For RSA/EG, include makekey times
 
 def run_tests(plaintext_input_file):
     padded_input_file = plaintext_input_file + ".padded"
@@ -33,7 +33,7 @@ def run_tests(plaintext_input_file):
     test_all_block_ciphers(padded_input_file)
     test_stream_ciphers(plaintext_input_file)
     test_asymmetric_rsa(padded_input_file)
-    test_asymmetric_elgamal(padded_input_file)
+    # test_asymmetric_elgamal(padded_input_file)
     test_hashes(plaintext_input_file)
 
 
@@ -214,30 +214,32 @@ def test_asymmetric_elgamal(file):
     # generate for each encryption session new K
     K = rpool.read(16).encode("hex")
     print("K for encrypt: " + str(K))
-
+    finish_keys = datetime.datetime.now()
+    keys_elapsed = finish_keys - start
 
     with open(file, 'rb') as f:
         with open("ciphertext of ElGamal.txt", 'wb') as g:
-
+            start = datetime.datetime.now()
 
             bytes_read = f.read(256)
-            public_key.encrypt(bytes_read,K)
+            g.write(public_key.encrypt(bytes_read,K))
 
             while not (len(bytes_read) == 0):
                 g.write(public_key.encrypt(bytes_read,K))
                 bytes_read = f.read(256)
 
             finish = datetime.datetime.now()
-            elapsed = finish - start
-            print("Encrypting " + str(file) + " with " + "ElGamal" + " took " + str(elapsed) + " seconds. ")
+            encrypt_elapsed = finish - start
+
+            print("Encrypting " + str(file) + " with " + "ElGamal" + " took " + str(keys_elapsed + encrypt_elapsed ) + " seconds. ")
+
 
     with open("ciphertext of ElGamal.txt", 'rb') as f:
         with open("plaintext of ElGamal.jpg", 'wb') as g:
             start = datetime.datetime.now()
-            dsize = SHA256.digest_size
-            sentinel = Random.new().read(dsize)
-            cipher = PKCS1_v1_5.new(private_key)
+
             bytes_read = f.read(256)  # include the digest size (32)
+
 
             while not (len(bytes_read) == 0):
                 g.write(cipher.decrypt(bytes_read, sentinel=sentinel))
