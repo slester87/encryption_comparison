@@ -213,8 +213,9 @@ def test_asymmetric_elgamal(file):
     # generate 2 ELGAMAL key pair
     rpool = Random.new()
     Random.atfork()
-    private_key = ElGamal.generate(256, rpool.read)
+    private_key = ElGamal.generate(64, rpool.read)
     public_key = private_key.publickey()
+
 
     # generate for each encryption session new K
     while 1:
@@ -228,19 +229,20 @@ def test_asymmetric_elgamal(file):
         with open("ciphertext of ElGamal.txt", 'wb') as g:
             start = datetime.datetime.now()
 
-            bytes_read = f.read(32)
+            bytes_read = f.read(8)
 
             while not (len(bytes_read) == 0):
 
+                print("original:  " + str(bytes_read))
                 ciphertext = public_key.encrypt(bytes_read,K)
-                print("len of ciphertext[0] is ")
-                print(str( ciphertext[0]))
-                print(str( ciphertext[1]))
-                print(str(len(ciphertext[0])))
-                print(str(len(ciphertext[1])))
+
                 g.write(ciphertext[0])
                 g.write(ciphertext[1])
-                bytes_read = f.read(32)
+
+                local_plaintext = private_key.decrypt(ciphertext)
+
+                print("decrypted: " + str(local_plaintext))
+                bytes_read = f.read(8)
 
             finish = datetime.datetime.now()
             encrypt_elapsed = finish - start
@@ -252,13 +254,15 @@ def test_asymmetric_elgamal(file):
         with open("plaintext of ElGamal.jpg", 'wb') as g:
             start = datetime.datetime.now()
 
-            bytes_read = f.read(32) # include the digest size (32)
-            bytes_read_2 = f.read(32)  # include the digest size (32)
+            bytes_read = f.read(8) # include the digest size (32)
+            bytes_read_2 = f.read(8)  # include the digest size (32)
 
             while not (len(bytes_read) == 0):
-                g.write(private_key.decrypt((bytes_read, bytes_read_2)))
-                bytes_read = f.read(32)
-                bytes_read_2 = f.read(32)  # include the digest size (32)
+                plaintext = private_key.decrypt((bytes_read, bytes_read_2))
+                print("plaintext: " + str(plaintext))
+                g.write(plaintext)
+                bytes_read = f.read(8)
+                bytes_read_2 = f.read(8)  # include the digest size (32)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
