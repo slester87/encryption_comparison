@@ -19,7 +19,8 @@ from Crypto.Hash import MD5
 # Utility
 import time
 from Crypto import Random
-import random
+from Crypto.Random import random
+from Crypto.Util.number import GCD
 import datetime
 import sys
 import shutil
@@ -31,8 +32,9 @@ def run_tests(plaintext_input_file):
     pad_the_file(plaintext_input_file, padded_input_file)
     test_all_block_ciphers(padded_input_file)
     test_stream_ciphers(plaintext_input_file)
-    test_asymmetric(padded_input_file)
-    '''test_hashes(plaintext_input_file)'''
+    test_asymmetric_rsa(padded_input_file)
+    test_asymmetric_elgamal(padded_input_file)
+    test_hashes(plaintext_input_file)
 
 
 def pad_the_file(plaintext_input_file, padded_input_file):
@@ -112,12 +114,12 @@ def block_encrypt(key, plaintext_input_file, alg, algname, mode, init_vector):
 def block_decrypt(key, alg, algname, mode, init_vector):
     cipher = alg.new(key, mode, IV=init_vector)
     with open("ciphertext of " + str(algname) + " mode # " + str(mode) + ".txt", 'rb') as f:
-        with open("plaintext of " + str(algname) + " mode # " + str(mode) + ".txt", "wb") as g:
+        with open("plaintext of " + str(algname) + " mode # " + str(mode) + ".jpg", "wb") as g:
             g.write(cipher.decrypt(f.read()))
 
 
 def test_stream_ciphers(file):
-    # ARC4
+    # ------------------------------------------ ARC4 -------------------------------------------------------------
     nonce = Random.new().read(16)
     key = make_key(b'str(file)' + nonce, 256)
     cipher = ARC4.new(key)
@@ -131,14 +133,14 @@ def test_stream_ciphers(file):
 
     cipher = ARC4.new(key)
     with open("ciphertext of " + "ARC4" + ".txt", 'rb') as f:
-        with open("plaintext of ARC4.txt", 'wb') as g:
+        with open("plaintext of ARC4.jpg", 'wb') as g:
             start = datetime.datetime.now()
             g.write(cipher.decrypt(f.read()))
             finish = datetime.datetime.now()
             elapsed = finish - start
             print("Decrypting " + str(file) + " with " + "ARC4" + " took " + str(elapsed) + " seconds. \n\n ")
 
-    # XOR
+    # ----------------------------------------- XOR ---------------------------------------------------------------
     key = make_key(key, 32)
     cipher = XOR.new(key)
     with open(file, 'rb') as f:
@@ -151,7 +153,7 @@ def test_stream_ciphers(file):
 
     cipher = XOR.new(key)
     with open("ciphertext of " + "XOR" + ".txt", 'rb') as f:
-        with open("plaintext of XOR.txt", 'wb') as g:
+        with open("plaintext of XOR.jpg", 'wb') as g:
             start = datetime.datetime.now()
             g.write(cipher.decrypt(f.read()))
             finish = datetime.datetime.now()
@@ -159,55 +161,115 @@ def test_stream_ciphers(file):
             print("Decrypting " + str(file) + " with " + "XOR" + " took " + str(elapsed) + " seconds. \n\n")
 
 
-def test_asymmetric(file):
-    # RSA
-    from Crypto.PublicKey import RSA
-    new_key = RSA.generate(2048, e=65537)
-    public_key = new_key.publickey()
-    private_key = new_key
-    # with open(file,'rb') as f:
-    #     h = SHA256.new(f.read())
+def test_asymmetric_rsa(file):
+    # ----------------------------------------- RSA --------------------------------------------------------------
+
+    rsa_key = RSA.generate(2048, e=65537)
+    public_key = rsa_key.publickey()
+    private_key = rsa_key
 
     with open(file, 'rb') as f:
         with open("ciphertext of RSA.txt", 'wb') as g:
-
             start = datetime.datetime.now()
             cipher = PKCS1_v1_5.new(public_key)
 
             bytes_read = f.read(224)
-            h = SHA256.new(bytes_read)
+
             while not (len(bytes_read) == 0):
                 g.write(cipher.encrypt(bytes_read))
                 bytes_read = f.read(224)
-                h = SHA256.new(bytes_read)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
             print("Encrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed) + " seconds. ")
 
     with open("ciphertext of RSA.txt", 'rb') as f:
-        with open("plaintext of RSA.txt", 'wb') as g:
-
+        with open("plaintext of RSA.jpg", 'wb') as g:
             start = datetime.datetime.now()
             dsize = SHA256.digest_size
             sentinel = Random.new().read(dsize)
             cipher = PKCS1_v1_5.new(private_key)
-            bytes_read = f.read(256)  #include the digest size (32)
+            bytes_read = f.read(256)  # include the digest size (32)
 
             while not (len(bytes_read) == 0):
-
                 g.write(cipher.decrypt(bytes_read, sentinel=sentinel))
                 bytes_read = f.read(256)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
-            print("Decrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed) + " seconds. ")
+            print("Decrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed) + " seconds.\n\n")
 
 
+            # -------------------------------------- ElGamal -----------------------------------------------------------
+
+
+def test_asymmetric_elgamal(file):
+    start = datetime.datetime.now()
+    # generate 2 ELGAMAL key pair
+    rpool = Random.new()
+    Random.atfork()
+    private_key = ElGamal.generate(1024, rpool.read)
+    public_key = private_key.publickey()
+
+    # generate for each encryption session new K
+    K = rpool.read(16).encode("hex")
+    print("K for encrypt: " + str(K))
+
+
+    with open(file, 'rb') as f:
+        with open("ciphertext of ElGamal.txt", 'wb') as g:
+
+
+            bytes_read = f.read(256)
+            public_key.encrypt(bytes_read,K)
+
+            while not (len(bytes_read) == 0):
+                g.write(public_key.encrypt(bytes_read,K))
+                bytes_read = f.read(256)
+
+            finish = datetime.datetime.now()
+            elapsed = finish - start
+            print("Encrypting " + str(file) + " with " + "ElGamal" + " took " + str(elapsed) + " seconds. ")
+
+    with open("ciphertext of ElGamal.txt", 'rb') as f:
+        with open("plaintext of ElGamal.jpg", 'wb') as g:
+            start = datetime.datetime.now()
+            dsize = SHA256.digest_size
+            sentinel = Random.new().read(dsize)
+            cipher = PKCS1_v1_5.new(private_key)
+            bytes_read = f.read(256)  # include the digest size (32)
+
+            while not (len(bytes_read) == 0):
+                g.write(cipher.decrypt(bytes_read, sentinel=sentinel))
+                bytes_read = f.read(256)
+
+            finish = datetime.datetime.now()
+            elapsed = finish - start
+            print("Decrypting " + str(file) + " with " + "ElGamal" + " took " + str(elapsed) + " seconds.\n\n ")
 
 
 def test_hashes(file):
-    return True
+    # Time the hashing of a large file using cryptographically secure hash
+    start = datetime.datetime.now()
+    h = SHA256.new()
+    with open(file, 'rb') as f:
+        h.update(f.read())
+    hash = h.hexdigest()
+    finish = datetime.datetime.now()
+    elapsed = finish - start
+    print("Hashing " + str(file) + " with SHA256 took " + str(elapsed) + " seconds.\n ")
+    print("With AES256, " + str(file) + " hashed to " + str(hash) + "\n\n")
+
+    start = datetime.datetime.now()
+    h = MD5.new()
+    with open(file, 'rb') as f:
+        h.update(f.read())
+    hash2 = h.hexdigest()
+
+    finish = datetime.datetime.now()
+    elapsed = finish - start
+    print("Hashing " + str(file) + " with SHA256 took " + str(elapsed) + " seconds.\n ")
+    print("With MD5, " + str(file) + " hashed to " + str(hash2) + "\n\n")
 
 
 def make_key(salt, key_size):
