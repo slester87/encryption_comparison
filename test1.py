@@ -25,7 +25,7 @@ import datetime
 import sys
 import shutil
 from os import path
-#ToDo: !!! Adjust how times are calculated e.g. where starts and finishes are placed. For RSA/EG, include makekey times
+
 
 def run_tests(plaintext_input_file):
     padded_input_file = plaintext_input_file + ".padded"
@@ -33,7 +33,7 @@ def run_tests(plaintext_input_file):
     test_all_block_ciphers(padded_input_file)
     test_stream_ciphers(plaintext_input_file)
     test_asymmetric_rsa(padded_input_file)
-    # test_asymmetric_elgamal(padded_input_file)
+    test_asymmetric_elgamal(padded_input_file)
     test_hashes(plaintext_input_file)
 
 
@@ -163,11 +163,14 @@ def test_stream_ciphers(file):
 
 def test_asymmetric_rsa(file):
     # ----------------------------------------- RSA --------------------------------------------------------------
-
+    start_making_keys = datetime.datetime.now()
     rsa_key = RSA.generate(2048, e=65537)
     public_key = rsa_key.publickey()
     private_key = rsa_key
+    finish_making_keys = datetime.datetime.now()
+    elapsed_keys = finish_making_keys - start_making_keys
 
+    # --- encryption ---
     with open(file, 'rb') as f:
         with open("ciphertext of RSA.txt", 'wb') as g:
             start = datetime.datetime.now()
@@ -181,8 +184,8 @@ def test_asymmetric_rsa(file):
 
             finish = datetime.datetime.now()
             elapsed = finish - start
-            print("Encrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed) + " seconds. ")
-
+            print("Encrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed_keys + elapsed) + " seconds. ")
+    # --- decryption ---
     with open("ciphertext of RSA.txt", 'rb') as f:
         with open("plaintext of RSA.jpg", 'wb') as g:
             start = datetime.datetime.now()
@@ -197,7 +200,9 @@ def test_asymmetric_rsa(file):
 
             finish = datetime.datetime.now()
             elapsed = finish - start
-            print("Decrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed) + " seconds.\n\n")
+            print(
+                    "Decrypting " + str(file) + " with " + "RSA" + " took " + str(
+                            elapsed_keys + elapsed) + " seconds.\n\n")
 
 
             # -------------------------------------- ElGamal -----------------------------------------------------------
@@ -208,46 +213,54 @@ def test_asymmetric_elgamal(file):
     # generate 2 ELGAMAL key pair
     rpool = Random.new()
     Random.atfork()
-    private_key = ElGamal.generate(1024, rpool.read)
+    private_key = ElGamal.generate(368, rpool.read)
     public_key = private_key.publickey()
 
     # generate for each encryption session new K
-    K = rpool.read(16).encode("hex")
+    while 1:
+        K = random.StrongRandom().randint(1, private_key.p - 1)
+        if GCD(K, private_key.p - 1) == 1: break
     print("K for encrypt: " + str(K))
     finish_keys = datetime.datetime.now()
     keys_elapsed = finish_keys - start
-
+    # --- encryption ---
     with open(file, 'rb') as f:
         with open("ciphertext of ElGamal.txt", 'wb') as g:
             start = datetime.datetime.now()
 
-            bytes_read = f.read(256)
-            g.write(public_key.encrypt(bytes_read,K))
+            bytes_read = f.read(48)
 
             while not (len(bytes_read) == 0):
-                g.write(public_key.encrypt(bytes_read,K))
-                bytes_read = f.read(256)
+                ciphertext = public_key.encrypt(bytes_read,K)
+                print("len of ciphertext[0] is ")
+                print(len( ciphertext[0]))
+                print ("\n then ciphertext 1 is \n")
+                print(len(ciphertext[1]))
+                g.write(ciphertext[0]+ciphertext[1])
+                bytes_read = f.read(48)
 
             finish = datetime.datetime.now()
             encrypt_elapsed = finish - start
 
-            print("Encrypting " + str(file) + " with " + "ElGamal" + " took " + str(keys_elapsed + encrypt_elapsed ) + " seconds. ")
-
-
+            print("Encrypting " + str(file) + " with " + "ElGamal" + " took " + str(
+                    keys_elapsed + encrypt_elapsed) + " seconds. ")
+    # --- decryption ---
     with open("ciphertext of ElGamal.txt", 'rb') as f:
         with open("plaintext of ElGamal.jpg", 'wb') as g:
             start = datetime.datetime.now()
 
-            bytes_read = f.read(256)  # include the digest size (32)
-
+            bytes_read = f.read(46)  # include the digest size (32)
+            bytes_read_2 = f.read(46)  # include the digest size (32)
 
             while not (len(bytes_read) == 0):
-                g.write(cipher.decrypt(bytes_read, sentinel=sentinel))
-                bytes_read = f.read(256)
+                g.write(private_key.decrypt((bytes_read, bytes_read_2)))
+                bytes_read = f.read(46)
+                bytes_read_2 = f.read(46)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
-            print("Decrypting " + str(file) + " with " + "ElGamal" + " took " + str(elapsed) + " seconds.\n\n ")
+            print("Decrypting " + str(file) + " with " + "ElGamal" + " took " + str(
+                    keys_elapsed + elapsed) + " seconds.\n\n ")
 
 
 def test_hashes(file):
