@@ -159,11 +159,11 @@ def test_asymmetric_rsa(file):
             start = datetime.datetime.now()
             cipher = PKCS1_v1_5.new(public_key)
 
-            bytes_read = f.read(224)
+            bytes_read = f.read(245)
 
             while not (len(bytes_read) == 0):
                 g.write(cipher.encrypt(bytes_read))
-                bytes_read = f.read(224)
+                bytes_read = f.read(245)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
@@ -196,7 +196,7 @@ def test_asymmetric_elgamal(file):
     # generate 2 ELGAMAL key pair
     rpool = Random.new()
     Random.atfork()
-    private_key = ElGamal.generate(64, rpool.read)
+    private_key = ElGamal.generate(512, rpool.read)
     public_key = private_key.publickey()
 
 
@@ -212,7 +212,7 @@ def test_asymmetric_elgamal(file):
         with open("ciphertext of ElGamal.txt", 'wb') as g:
             start = datetime.datetime.now()
 
-            bytes_read = f.read(8)
+            bytes_read = f.read(54)
 
             while not (len(bytes_read) == 0):
                 # pyCrypto's ElGamal's implementation appears to be broken:
@@ -221,11 +221,10 @@ def test_asymmetric_elgamal(file):
 
                 g.write(ciphertext[0])
                 g.write(ciphertext[1])
-
                 local_plaintext = private_key.decrypt(ciphertext)
 
                 # print("decrypted: " + str(local_plaintext))
-                bytes_read = f.read(8)
+                bytes_read = f.read(54)
 
             finish = datetime.datetime.now()
             encrypt_elapsed = finish - start
@@ -237,15 +236,15 @@ def test_asymmetric_elgamal(file):
         with open("plaintext of ElGamal.jpg", 'wb') as g:
             start = datetime.datetime.now()
 
-            bytes_read = f.read(8) # include the digest size (32)
-            bytes_read_2 = f.read(8)  # include the digest size (32)
+            bytes_read = f.read(64) # include the digest size (32)
+            bytes_read_2 = f.read(64)  # include the digest size (32)
 
             while not (len(bytes_read) == 0):
                 plaintext = private_key.decrypt((bytes_read, bytes_read_2))
                 # print("plaintext: " + str(plaintext))
                 g.write(plaintext)
-                bytes_read = f.read(8)
-                bytes_read_2 = f.read(8)  # include the digest size (32)
+                bytes_read = f.read(64)
+                bytes_read_2 = f.read(64)  # include the digest size (32)
 
             finish = datetime.datetime.now()
             elapsed = finish - start
