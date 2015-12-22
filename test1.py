@@ -23,9 +23,11 @@ from Crypto.Random import random
 from Crypto.Util.number import GCD
 import datetime
 import sys
-import shutil
-from os import path
 
+
+# test support  stuff
+from test_common import pad_the_file, make_symm_key
+from test_common import name_ciphertext_file, name_plaintext_file
 
 def run_tests(plaintext_input_file):
     padded_input_file = plaintext_input_file + ".padded"
@@ -37,28 +39,9 @@ def run_tests(plaintext_input_file):
     test_hashes(plaintext_input_file)
 
 
-def pad_the_file(plaintext_input_file, padded_input_file):
-    filesize = path.getsize(plaintext_input_file)
-    shutil.copy(plaintext_input_file, padded_input_file)
-
-    if not (filesize % 16 == 0 or filesize == 0):
-        file_dif = 16 - (filesize % 16)
-
-        # print("filesize " + str(filesize) + " dif is " + str(file_dif) + "\n")
-        with open(padded_input_file, "ab") as out_f:
-            out_f.seek(len(plaintext_input_file))
-            diff_bytes = bytearray(file_dif)
-            out_f.write(diff_bytes)
-
-    filesize_padded = path.getsize(padded_input_file)
-
-    # print("padded is " + str(filesize_padded)+ "\n\n")
-
-
 def test_all_block_ciphers(file):
-    # Todo: time the encryption and decryption of file and record results
-    sixteen_byte_key = make_key(str(file), 16)
-    eight_byte_key = make_key(str(reversed(file)), 8)
+    sixteen_byte_key = make_symm_key(str(file), 16)
+    eight_byte_key = make_symm_key(str(reversed(file)), 8)
 
     test_block_cipher(AES, "AES", file, sixteen_byte_key, sixteen_byte_key)
     test_block_cipher(DES3, "TripleDes", file, sixteen_byte_key, eight_byte_key)
@@ -121,7 +104,7 @@ def block_decrypt(key, alg, algname, mode, init_vector):
 def test_stream_ciphers(file):
     # ------------------------------------------ ARC4 -------------------------------------------------------------
     nonce = Random.new().read(16)
-    key = make_key(b'str(file)' + nonce, 256)
+    key = make_symm_key(b'str(file)' + nonce, 256)
     cipher = ARC4.new(key)
     with open(file, 'rb') as f:
         with open("ciphertext of " + "ARC4" + ".txt", 'wb') as g:
@@ -141,7 +124,7 @@ def test_stream_ciphers(file):
             print("Decrypting " + str(file) + " with " + "ARC4" + " took " + str(elapsed) + " seconds. \n\n ")
 
     # ----------------------------------------- XOR ---------------------------------------------------------------
-    key = make_key(key, 32)
+    key = make_symm_key(key, 32)
     cipher = XOR.new(key)
     with open(file, 'rb') as f:
         with open("ciphertext of " + "XOR" + ".txt", 'wb') as g:
@@ -232,8 +215,8 @@ def test_asymmetric_elgamal(file):
             bytes_read = f.read(8)
 
             while not (len(bytes_read) == 0):
-
-                print("original:  " + str(bytes_read))
+                # pyCrypto's ElGamal's implementation appears to be broken:
+                # print("original:  " + str(bytes_read))
                 ciphertext = public_key.encrypt(bytes_read,K)
 
                 g.write(ciphertext[0])
@@ -241,7 +224,7 @@ def test_asymmetric_elgamal(file):
 
                 local_plaintext = private_key.decrypt(ciphertext)
 
-                print("decrypted: " + str(local_plaintext))
+                # print("decrypted: " + str(local_plaintext))
                 bytes_read = f.read(8)
 
             finish = datetime.datetime.now()
@@ -259,7 +242,7 @@ def test_asymmetric_elgamal(file):
 
             while not (len(bytes_read) == 0):
                 plaintext = private_key.decrypt((bytes_read, bytes_read_2))
-                print("plaintext: " + str(plaintext))
+                # print("plaintext: " + str(plaintext))
                 g.write(plaintext)
                 bytes_read = f.read(8)
                 bytes_read_2 = f.read(8)  # include the digest size (32)
@@ -293,13 +276,6 @@ def test_hashes(file):
     print("Hashing " + str(file) + " with SHA256 took " + str(elapsed) + " seconds.\n ")
     print("With MD5, " + str(file) + " hashed to " + str(hash2) + "\n\n")
 
-
-def make_key(salt, key_size):
-    m = SHA256.new()
-    m.update(str(datetime.datetime.now().second).encode('utf-8'))
-    m.update((m.hexdigest() + str(Random.new().read(16)) + str(salt)).encode('utf-8'))
-
-    return m.hexdigest()[0:key_size]
 
 
 run_tests(sys.argv[1])
