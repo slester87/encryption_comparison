@@ -43,3 +43,6 @@ def name_ciphertext_file(suite, alg, mode, ext="jpg"):
 
 def name_plaintext_file(suite, alg, mode, ext="jpg"):
     return "plaintext_of_" + str(suite) +"_" +str(alg) +"_"+ str(mode) +"."+ str(ext)
+
+def time_output(suite, alg, mode, action, time):
+    pass
