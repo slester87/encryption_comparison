@@ -153,6 +153,9 @@ def test_asymmetric_rsa(file):
     finish_making_keys = datetime.datetime.now()
     elapsed_keys = finish_making_keys - start_making_keys
 
+    print("Keying " + str(file) + " with " + "RSA" + " took " + str(
+            elapsed_keys) + " seconds. ")
+
     # --- encryption ---
     with open(file, 'rb') as f:
         with open("ciphertext of RSA.txt", 'wb') as g:
@@ -167,7 +170,7 @@ def test_asymmetric_rsa(file):
 
             finish = datetime.datetime.now()
             elapsed = finish - start
-            print("Encrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed_keys + elapsed) + " seconds. ")
+            print("Encrypting " + str(file) + " with " + "RSA" + " took " + str(elapsed) + " seconds. ")
     # --- decryption ---
     with open("ciphertext of RSA.txt", 'rb') as f:
         with open("plaintext of RSA.jpg", 'wb') as g:
@@ -185,7 +188,7 @@ def test_asymmetric_rsa(file):
             elapsed = finish - start
             print(
                     "Decrypting " + str(file) + " with " + "RSA" + " took " + str(
-                            elapsed_keys + elapsed) + " seconds.\n\n")
+                            elapsed) + " seconds.\n\n")
 
 
             # -------------------------------------- ElGamal -----------------------------------------------------------
@@ -207,6 +210,10 @@ def test_asymmetric_elgamal(file):
     print("K for encrypt: " + str(K))
     finish_keys = datetime.datetime.now()
     keys_elapsed = finish_keys - start
+
+    print("Keying " + str(file) + " with " + "ElGamal" + " took " + str(
+            keys_elapsed) + " seconds. ")
+
     # --- encryption ---
     with open(file, 'rb') as f:
         with open("ciphertext of ElGamal.txt", 'wb') as g:
@@ -229,7 +236,7 @@ def test_asymmetric_elgamal(file):
             encrypt_elapsed = finish - start
 
             print("Encrypting " + str(file) + " with " + "ElGamal" + " took " + str(
-                    keys_elapsed + encrypt_elapsed) + " seconds. ")
+                    encrypt_elapsed) + " seconds. ")
     # --- decryption ---
     with open("ciphertext of ElGamal.txt", 'rb') as f:
         with open("plaintext of ElGamal.jpg", 'wb') as g:
@@ -248,7 +255,7 @@ def test_asymmetric_elgamal(file):
             finish = datetime.datetime.now()
             elapsed = finish - start
             print("Decrypting " + str(file) + " with " + "ElGamal" + " took " + str(
-                    keys_elapsed + elapsed) + " seconds.\n\n ")
+                    elapsed) + " seconds.\n\n ")
 
 
 def test_hashes(file):
@@ -271,7 +278,7 @@ def test_hashes(file):
 
     finish = datetime.datetime.now()
     elapsed = finish - start
-    print("Hashing " + str(file) + " with SHA256 took " + str(elapsed) + " seconds.\n ")
+    print("Hashing " + str(file) + " with MD5 took " + str(elapsed) + " seconds.\n ")
     print("With MD5, " + str(file) + " hashed to " + str(hash2) + "\n\n")
 
 

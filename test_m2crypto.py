@@ -132,6 +132,8 @@ def test_asymmetric_rsa(padded_input_file):
     mk_rsa_keys_start = datetime.datetime.now()
     rsa = RSA.gen_key(2048, 65537, rsa_gen_callback)
     mk_rsa_keys_elapsed = datetime.datetime.now() - mk_rsa_keys_start
+    print("Keying with " + "rsa" + " took " + str(mk_rsa_keys_elapsed) + " seconds.")
+
     padding = getattr(RSA, 'pkcs1_padding')
     with open(padded_input_file, 'rb') as in_file:
         with open(name_ciphertext_file("M2", "rsa", "rsa"), 'wb') as out_file:
@@ -151,8 +153,8 @@ def test_asymmetric_rsa(padded_input_file):
                 if not buf: break
                 out_file.write(rsa.private_decrypt(buf, padding))
             dec_elapsed = datetime.datetime.now() - dec_start
-    print("Encrypt with " + "rsa" + " took " + str(mk_rsa_keys_elapsed + enc_elapsed) + " seconds.")
-    print("Decrypt with " + "rsa" + " took " + str(mk_rsa_keys_elapsed + dec_elapsed) + " seconds. \n\n")
+    print("Encrypt with " + "rsa" + " took " + str(enc_elapsed) + " seconds.")
+    print("Decrypt with " + "rsa" + " took " + str(dec_elapsed) + " seconds. \n\n")
 
 def test_hashes(plaintext_input_file):
     sha256 = EVP.MessageDigest('sha256')
